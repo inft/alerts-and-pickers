@@ -96,14 +96,18 @@ public struct Contacts {
     /// etching Contacts from phone with Grouped By Alphabet
     ///
     /// - Parameter completionHandler: It will return Dictonary of Alphabets with Their Sorted Respective Contacts.
-     @available(iOS 10.0, *)
      public static func fetchContactsGroupedByAlphabets(completionHandler: @escaping (GroupedByAlphabetsFetchResults) -> ()) {
         
         let contactStore: CNContactStore = CNContactStore()
         let fetchRequest: CNContactFetchRequest = CNContactFetchRequest(keysToFetch: [CNContactVCardSerialization.descriptorForRequiredKeys()])
         var orderedContacts: [String: [CNContact]] = [String: [CNContact]]()
         CNContact.localizedString(forKey: CNLabelPhoneNumberiPhone)
-        fetchRequest.mutableObjects = false
+        if #available(iOS 10.0, *) {
+            fetchRequest.mutableObjects = false
+        } else {
+            // Fallback on earlier versions
+            // phil will todo
+        }
         fetchRequest.unifyResults = true
         fetchRequest.sortOrder = .givenName
         do {

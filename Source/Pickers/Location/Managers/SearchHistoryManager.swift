@@ -50,23 +50,56 @@ extension CLLocationCoordinate2D {
 	}
 }
 
+extension CNMutablePostalAddress {
+    convenience init(placemark: CLPlacemark) {
+        self.init()
+        street = [placemark.subThoroughfare, placemark.thoroughfare]
+            .compactMap { $0 }           // remove nils, so that...
+            .joined(separator: " ")      // ...only if both != nil, add a space.
+        /*
+         // Equivalent street assignment, w/o flatMap + joined:
+         if let subThoroughfare = placemark.subThoroughfare,
+         let thoroughfare = placemark.thoroughfare {
+         street = "\(subThoroughfare) \(thoroughfare)"
+         } else {
+         street = (placemark.subThoroughfare ?? "") + (placemark.thoroughfare ?? "")
+         }
+         */
+        city = placemark.locality ?? ""
+        state = placemark.administrativeArea ?? ""
+        postalCode = placemark.postalCode ?? ""
+        country = placemark.country ?? ""
+        isoCountryCode = placemark.isoCountryCode ?? ""
+        if #available(iOS 10.3, *) {
+            subLocality = placemark.subLocality ?? ""
+            subAdministrativeArea = placemark.subAdministrativeArea ?? ""
+        }
+    }
+}
+
 extension Location {
     
 	func toDefaultsDic() -> NSDictionary? {
-		guard let postalAddress = placemark.postalAddress,
-			let placemarkCoordinatesDic = placemark.location?.coordinate.toDefaultsDic()
-			else { return nil }
-		
-        let formatter = CNPostalAddressFormatter()
-        let addressDic = formatter.string(from: postalAddress)
+        var postalAddress: CNPostalAddress?
+        if #available(iOS 11.0, *) {
+            postalAddress = placemark.postalAddress
+        } else {
+            postalAddress = CNMutablePostalAddress.init(placemark: placemark)
+        }
+        guard let address = postalAddress,
+            let placemarkCoordinatesDic = placemark.location?.coordinate.toDefaultsDic()
+            else { return nil }
         
-		var dic: [String: AnyObject] = [
-			LocationDicKeys.locationCoordinates: location.coordinate.toDefaultsDic(),
-			LocationDicKeys.placemarkAddressDic: addressDic as AnyObject,
-			LocationDicKeys.placemarkCoordinates: placemarkCoordinatesDic
-		]
-		if let name = name { dic[LocationDicKeys.name] = name as AnyObject? }
-		return dic as NSDictionary?
+        let formatter = CNPostalAddressFormatter()
+        let addressDic = formatter.string(from: address)
+        
+        var dic: [String: AnyObject] = [
+            LocationDicKeys.locationCoordinates: location.coordinate.toDefaultsDic(),
+            LocationDicKeys.placemarkAddressDic: addressDic as AnyObject,
+            LocationDicKeys.placemarkCoordinates: placemarkCoordinatesDic
+        ]
+        if let name = name { dic[LocationDicKeys.name] = name as AnyObject? }
+        return dic as NSDictionary?
 	}
 	
 	class func fromDefaultsDic(_ dic: NSDictionary) -> Location? {

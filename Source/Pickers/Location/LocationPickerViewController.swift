@@ -77,14 +77,8 @@ final class LocationPickerViewController: UIViewController {
         $0.mapType = mapType
         $0.showsCompass = false
         $0.showsScale = true
-        
         return $0
     }(MKMapView())
-    
-    lazy var scaleView: MKScaleView = {
-        $0.scaleVisibility = .visible
-        return $0
-    }(MKScaleView(mapView: mapView))
     
     lazy var locationButton: Button = {
         $0.backgroundColor = UIColor.white.withAlphaComponent(0.8)
@@ -135,8 +129,16 @@ final class LocationPickerViewController: UIViewController {
 	
 	open override func viewDidLoad() {
 		super.viewDidLoad()
-		
-        mapView.addSubview(scaleView)
+        if #available(iOS 11.0, *){
+            var scaleView: MKScaleView = {
+                $0.scaleVisibility = .visible
+                return $0
+            }(MKScaleView(mapView: mapView))
+            mapView.addSubview(scaleView)
+        }else {
+            // phil will todo
+        }
+        
         mapView.addSubview(locationButton)
         
 		locationManager.delegate = self
